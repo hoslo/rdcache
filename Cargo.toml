@@ -2,6 +2,8 @@
 name = "rdcache"
 version = "0.1.0"
 edition = "2021"
+description = "a simple cache using redis backend"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -17,4 +19,3 @@ uuid = { version = "1.10.0", features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ] }
 chrono = "0.4.38"
-
