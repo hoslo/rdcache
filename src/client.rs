@@ -35,6 +35,8 @@ pub struct Options {
     // CacheDeleteDisabled is the flag to disable delete cache. default is false
     // when redis is down, set this flat to downgrade.
     pub disable_cache_delete: bool,
+    // CommonPrefix is the common prefix for all keys. default is ""
+    pub common_prefix: String,
 }
 
 impl Default for Options {
@@ -47,6 +49,7 @@ impl Default for Options {
             random_expire_adjustment: 0.1,
             disable_cache_read: false,
             disable_cache_delete: false,
+            common_prefix: "".to_string(),
         }
     }
 }
@@ -75,6 +78,10 @@ impl Client {
         Fut: Future<Output = Result<Option<V>>>,
         V: DeserializeOwned + Serialize + Debug,
     {
+        let mut key = key.into();
+        if !self.options.common_prefix.is_empty() {
+            key = format!("{}{}", self.options.common_prefix, key);
+        }
         let ex = expire
             - self.options.delay
             - Duration::from_secs(
@@ -83,7 +90,7 @@ impl Client {
         if self.options.disable_cache_read {
             f().await
         } else {
-            self.strong_fetch(&key.into(), ex, f).await
+            self.strong_fetch(&key, ex, f).await
         }
     }
 
@@ -91,9 +98,13 @@ impl Client {
         if self.options.disable_cache_delete {
             return Ok(());
         }
+        let mut key = key.into();
+        if !self.options.common_prefix.is_empty() {
+            key = format!("{}{}", self.options.common_prefix, key);
+        }
         self.call_lua(
             &DELETE_SCRIPT,
-            CommandArgs::default().arg(key.into()).build(),
+            CommandArgs::default().arg(key).build(),
             CommandArgs::default()
                 .arg(self.options.delay.as_secs())
                 .build(),
