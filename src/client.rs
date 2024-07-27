@@ -136,10 +136,10 @@ impl Client {
                 .await?;
         }
         if lock_until.to_string() != "LOCKED" {
-            if let Value::BulkString(s) = value {
-                return rmp_serde::from_slice(&s).map_err(new_decode_error);
-            }
-            return Err(Error::RedisError(rustis::Error::Aborted));
+            let Value::BulkString(s) = value else {
+                return Err(Error::RedisError(rustis::Error::Aborted));
+            };
+            return rmp_serde::from_slice(&s).map_err(new_decode_error);
         }
         self.fetch_new(key, expire, &owner, f).await
     }
@@ -158,33 +158,28 @@ impl Client {
     {
         let result = f().await;
         let mut expire = expire;
+
         match result {
             Ok(result) => {
                 if result.is_none() {
                     expire = self.options.empty_expire;
-                }
-                match result {
-                    Some(result) => {
-                        let result_bytes = rmp_serde::to_vec(&result).map_err(new_encode_error)?;
-                        self.call_lua(
-                            &SET_SCRIPT,
-                            CommandArgs::default().arg(key).build(),
-                            CommandArgs::default()
-                                .arg(result_bytes)
-                                .arg(owner)
-                                .arg(expire.as_secs())
-                                .build(),
-                        )
-                        .await?;
-                        Ok(Some(result))
-                    }
-                    None => {
-                        if self.options.empty_expire.as_secs() == 0 {
-                            _ = self.rdb.del(key).await.map_err(new_redis_error);
-                        }
-                        Ok(None)
+                    if self.options.empty_expire.as_secs() == 0 {
+                        _ = self.rdb.del(key).await.map_err(new_redis_error);
                     }
                 }
+
+                let result_bytes = rmp_serde::to_vec(&result).map_err(new_encode_error)?;
+                self.call_lua(
+                    &SET_SCRIPT,
+                    CommandArgs::default().arg(key).build(),
+                    CommandArgs::default()
+                        .arg(result_bytes)
+                        .arg(owner)
+                        .arg(expire.as_secs())
+                        .build(),
+                )
+                .await?;
+                Ok(result)
             }
             Err(e) => {
                 _ = self.unlock_for_update(key, owner).await;
