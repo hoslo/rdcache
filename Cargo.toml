@@ -1,6 +1,6 @@
 [package]
 name = "rdcache"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "a simple cache using redis backend"
 license = "Apache-2.0"
