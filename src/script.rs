@@ -69,51 +69,14 @@ end"#,
     )
 });
 
-// pub(crate) static GET_BATCH_SCRIPT: LazyLock<Script> = LazyLock::new(|| {
-//     Script::new(
-//         r#"
-// local rets = {}
-// for i, key in ipairs(KEYS)
-// do
-// 	local v = redis.call('HGET', key, 'value')
-// 	local lu = redis.call('HGET', key, 'lockUntil')
-// 	if lu ~= false and tonumber(lu) < tonumber(ARGV[1]) or lu == false and v == false then
-// 		redis.call('HSET', key, 'lockUntil', ARGV[2])
-// 		redis.call('HSET', key, 'lockOwner', ARGV[3])
-// 		table.insert(rets, { v, 'LOCKED' })
-// 	else
-// 		table.insert(rets, {v, lu})
-// 	end
-// end
-// return rets"#,
-//     )
-// });
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-// pub(crate) static SET_BATCH_SCRIPT: LazyLock<Script> = LazyLock::new(|| {
-//     Script::new(
-//         r#"
-// local n = #KEYS
-// for i, key in ipairs(KEYS)
-// do
-// 	local o = redis.call('HGET', key, 'lockOwner')
-// 	if o ~= ARGV[1] then
-// 			return
-// 	end
-// 	redis.call('HSET', key, 'value', ARGV[i+1])
-// 	redis.call('HDEL', key, 'lockUntil')
-// 	redis.call('HDEL', key, 'lockOwner')
-// 	redis.call('EXPIRE', key, ARGV[i+1+n])
-// end"#,
-//     )
-// });
-
-// pub(crate) static LOCK_BATCH_SCRIPT: LazyLock<Script> = LazyLock::new(|| {
-//     Script::new(
-//         r#"
-// for i, key in ipairs(KEYS) do
-// 	redis.call('HSET', key, 'lockUntil', 0)
-// 	redis.call('HDEL', key, 'lockOwner')
-// 	redis.call('EXPIRE', key, ARGV[1])
-// end"#,
-//     )
-// });
+    #[test]
+    fn test_script_new() {
+        let script = Script::new("return 1");
+        assert_eq!(script.hash, "e0e1f9fabfc9d4800c877a703b823ac0578ff8db");
+        assert_eq!(script.src, "return 1");
+    }
+}

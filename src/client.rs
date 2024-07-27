@@ -63,7 +63,7 @@ impl Client {
     pub fn new(rdb: rustis::client::Client, options: Options) -> Self {
         Self { rdb, options }
     }
-    pub fn rdb(&self) -> &rustis::client::Client {
+    pub fn raw_client(&self) -> &rustis::client::Client {
         &self.rdb
     }
 
@@ -260,5 +260,32 @@ impl Client {
             }
             Err(e) => Err(Error::RedisError(e)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustis::client::Client as RustisClient;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn test_fetch() {
+        let rdb = RustisClient::connect("127.0.0.1:6379").await.unwrap();
+        let client = Client::new(rdb, Options::default());
+        let key = "test_fetch";
+        let expire = Duration::from_secs(600);
+        let f = async { Ok(Some("test".to_string())) };
+        let result = client.fetch(key, expire, || f).await;
+        assert_eq!(result.unwrap(), Some("test".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_tag_as_deleted() {
+        let rdb = RustisClient::connect("127.0.0.1:6379").await.unwrap();
+        let client = Client::new(rdb, Options::default());
+        let key = "test_tag_as_deleted";
+        let result = client.tag_as_deleted(key).await;
+        assert!(result.is_ok());
     }
 }
