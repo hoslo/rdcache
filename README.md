@@ -7,6 +7,8 @@
 [license-badge]: https://img.shields.io/crates/l/rdcache.svg
 [license-url]: LICENSE
 
+Rust version of [rockscache](https://github.com/dtm-labs/rockscache)
+
 ## Features
 - Execute an async task only once for the same key at the same time and diffrent application.
 - Use MessagePack to cache data.
